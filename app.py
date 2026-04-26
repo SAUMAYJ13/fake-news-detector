@@ -23,12 +23,12 @@ def train_model():
     ##real = pd.read_csv("True.csv")
    import pandas as pd
 
-url_fake = "https://storage.googleapis.com/dataset-uploader/fake.csv"
-url_real = "https://storage.googleapis.com/dataset-uploader/true.csv"
+    url_fake = "https://storage.googleapis.com/dataset-uploader/fake.csv"
+    url_real = "https://storage.googleapis.com/dataset-uploader/true.csv"
 
-fake = pd.read_csv(url_fake)
-real = pd.read_csv(url_real)
-
+    fake = pd.read_csv(url_fake)
+    real = pd.read_csv(url_real)
+ 
     fake["label"] = 0
     real["label"] = 1
 
