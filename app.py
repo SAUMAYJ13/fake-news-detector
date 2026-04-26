@@ -27,14 +27,14 @@ def train_model():
    fake = pd.read_csv(url_fake)    
    real = pd.read_csv(url_real)
  
-    fake["label"] = 0
-    real["label"] = 1
+   fake["label"] = 0
+   real["label"] = 1
 
-    data = pd.concat([fake, real], axis=0)
-    data = data.sample(frac=1).reset_index(drop=True)
+   data = pd.concat([fake, real], axis=0)
+   data = data.sample(frac=1).reset_index(drop=True)
 
     # Clean text
-    def clean_text(text):
+   def clean_text(text):
         text = text.lower()
         text = text.translate(str.maketrans("", "", string.punctuation))
         return text
