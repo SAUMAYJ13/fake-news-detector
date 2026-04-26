@@ -21,8 +21,8 @@ def train_model():
     # Load datasets
     #fake = pd.read_csv("Fake.csv")
     ##real = pd.read_csv("True.csv")
-    fake = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/fake_news/Fake.csv")
-    real = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/fake_news/True.csv")
+    fake = pd.read_csv("https://raw.githubusercontent.com/rahulvyasm/fake-news-detection/master/Fake.csv")
+    real = pd.read_csv("https://raw.githubusercontent.com/rahulvyasm/fake-news-detection/master/True.csv")
 
     fake["label"] = 0
     real["label"] = 1
