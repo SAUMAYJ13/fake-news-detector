@@ -1,53 +1,50 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
 import string
-import streamlit as st
+import matplotlib.pyplot as plt
+import seaborn as sns
+from wordcloud import WordCloud
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
-from wordcloud import WordCloud
-
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 # -------------------------------
-# Load and Train Model (Cached)
+# Train Model (Cached)
 # -------------------------------
 @st.cache_resource
 def train_model():
-    # Load datasets
-    #fake = pd.read_csv("Fake.csv")
-    ##real = pd.read_csv("True.csv")
-   import pandas as pd
-   url_fake = "https://storage.googleapis.com/dataset-uploader/fake.csv"
-   url_real = "https://storage.googleapis.com/dataset-uploader/true.csv"
-   fake = pd.read_csv(url_fake)    
-   real = pd.read_csv(url_real)
- 
-   fake["label"] = 0
-   real["label"] = 1
+    # Load dataset from stable source
+    url_fake = "https://storage.googleapis.com/dataset-uploader/fake.csv"
+    url_real = "https://storage.googleapis.com/dataset-uploader/true.csv"
 
-   data = pd.concat([fake, real], axis=0)
-   data = data.sample(frac=1).reset_index(drop=True)
+    fake = pd.read_csv(url_fake)
+    real = pd.read_csv(url_real)
+
+    fake["label"] = 0
+    real["label"] = 1
+
+    data = pd.concat([fake, real], axis=0)
+    data = data.sample(frac=1).reset_index(drop=True)
 
     # Clean text
-   def clean_text(text):
+    def clean_text(text):
         text = text.lower()
         text = text.translate(str.maketrans("", "", string.punctuation))
         return text
 
     data["text"] = data["text"].apply(clean_text)
 
-    # Split
+    # Split data
     x = data["text"]
     y = data["label"]
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
-    # TF-IDF
+    # Vectorization
     vectorizer = TfidfVectorizer(stop_words="english", max_df=0.7)
     x_train_vec = vectorizer.fit_transform(x_train)
     x_test_vec = vectorizer.transform(x_test)
@@ -56,22 +53,20 @@ def train_model():
     model = LogisticRegression()
     model.fit(x_train_vec, y_train)
 
-    # Predictions
+    # Evaluation
     pred = model.predict(x_test_vec)
     accuracy = accuracy_score(y_test, pred)
-
-    # Confusion Matrix
     cm = confusion_matrix(y_test, pred)
 
-    return model, vectorizer, accuracy, cm,data
+    return model, vectorizer, accuracy, cm, data
 
 
-# Load trained model
-model, vectorizer, accuracy, cm,data = train_model()
+# Load model
+model, vectorizer, accuracy, cm, data = train_model()
 
 
 # -------------------------------
-# Streamlit UI
+# UI
 # -------------------------------
 st.title("🧠 Fake News Detection using NLP & Machine Learning")
 
@@ -79,26 +74,30 @@ st.write(f"Model Accuracy: {accuracy:.2f}")
 
 
 # -------------------------------
-# Confusion Matrix Display
+# Confusion Matrix
 # -------------------------------
 st.subheader("Confusion Matrix")
 
 fig, ax = plt.subplots()
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-
 st.pyplot(fig)
 
+
+# -------------------------------
+# Bar Graph
+# -------------------------------
 st.subheader("Fake vs Real News Distribution")
 
 fig2, ax2 = plt.subplots()
 data['label'].value_counts().plot(kind='bar', ax=ax2)
-
 ax2.set_xlabel("Label (0 = Fake, 1 = Real)")
 ax2.set_ylabel("Count")
-ax2.set_title("Distribution of Fake and Real News")
-
 st.pyplot(fig2)
 
+
+# -------------------------------
+# WordCloud
+# -------------------------------
 st.subheader("Word Cloud (Fake News)")
 
 fake_text = " ".join(data[data['label'] == 0]['text'])
@@ -110,10 +109,12 @@ ax3.imshow(wc)
 ax3.axis("off")
 
 st.pyplot(fig3)
+
+
 # -------------------------------
-# Prediction Section
+# Prediction
 # -------------------------------
-def clean_text(text):
+def clean_text_input(text):
     text = text.lower()
     text = text.translate(str.maketrans("", "", string.punctuation))
     return text
@@ -122,7 +123,7 @@ def clean_text(text):
 user_input = st.text_area("Enter News Text:")
 
 if st.button("Predict"):
-    cleaned = clean_text(user_input)
+    cleaned = clean_text_input(user_input)
     vectorized = vectorizer.transform([cleaned])
     result = model.predict(vectorized)
 
