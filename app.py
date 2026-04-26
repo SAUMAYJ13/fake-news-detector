@@ -21,8 +21,13 @@ def train_model():
     # Load datasets
     #fake = pd.read_csv("Fake.csv")
     ##real = pd.read_csv("True.csv")
-    fake = pd.read_csv("https://raw.githubusercontent.com/rahulvyasm/fake-news-detection/master/Fake.csv")
-    real = pd.read_csv("https://raw.githubusercontent.com/rahulvyasm/fake-news-detection/master/True.csv")
+   import pandas as pd
+
+url_fake = "https://storage.googleapis.com/dataset-uploader/fake.csv"
+url_real = "https://storage.googleapis.com/dataset-uploader/true.csv"
+
+fake = pd.read_csv(url_fake)
+real = pd.read_csv(url_real)
 
     fake["label"] = 0
     real["label"] = 1
