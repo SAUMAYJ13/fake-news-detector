@@ -11,18 +11,21 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
 
+# -----------------------------
+# Page Config
+# -----------------------------
+st.set_page_config(page_title="Fake News Detection", layout="centered")
 
-# -------------------------------
-# Train Model (Cached)
-# -------------------------------
+st.title("📰 Fake News Detection App")
+
+# -----------------------------
+# Load and Train Model
+# -----------------------------
 @st.cache_resource
 def train_model():
-    # Load dataset from stable source
-    url_fake = "https://storage.googleapis.com/dataset-uploader/fake.csv"
-    url_real = "https://storage.googleapis.com/dataset-uploader/true.csv"
-
-    fake = pd.read_csv("Fake_small.csv")
-    real = pd.read_csv("True_small.csv")
+    # Load LOCAL dataset (important for deployment)
+    fake = pd.read_csv("Fake.csv")
+    real = pd.read_csv("True.csv")
 
     fake["label"] = 0
     real["label"] = 1
@@ -30,104 +33,99 @@ def train_model():
     data = pd.concat([fake, real], axis=0)
     data = data.sample(frac=1).reset_index(drop=True)
 
-    # Clean text
+    # Text cleaning
     def clean_text(text):
-        text = text.lower()
-        text = text.translate(str.maketrans("", "", string.punctuation))
+        text = str(text).lower()
+        text = text.translate(str.maketrans('', '', string.punctuation))
         return text
 
     data["text"] = data["text"].apply(clean_text)
 
-    # Split data
-    x = data["text"]
+    X = data["text"]
     y = data["label"]
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
-    # Vectorization
+    # TF-IDF
     vectorizer = TfidfVectorizer(stop_words="english", max_df=0.7)
-    x_train_vec = vectorizer.fit_transform(x_train)
-    x_test_vec = vectorizer.transform(x_test)
+    X_train_vec = vectorizer.fit_transform(X_train)
+    X_test_vec = vectorizer.transform(X_test)
 
     # Model
     model = LogisticRegression()
-    model.fit(x_train_vec, y_train)
+    model.fit(X_train_vec, y_train)
 
-    # Evaluation
-    pred = model.predict(x_test_vec)
-    accuracy = accuracy_score(y_test, pred)
-    cm = confusion_matrix(y_test, pred)
+    # Accuracy
+    y_pred = model.predict(X_test_vec)
+    acc = accuracy_score(y_test, y_pred)
 
-    return model, vectorizer, accuracy, cm, data
+    cm = confusion_matrix(y_test, y_pred)
+
+    return model, vectorizer, acc, cm, data
 
 
-# Load model
 model, vectorizer, accuracy, cm, data = train_model()
 
+# -----------------------------
+# Show Accuracy
+# -----------------------------
+st.write(f"### Model Accuracy: {round(accuracy, 2)}")
 
-# -------------------------------
-# UI
-# -------------------------------
-st.title("🧠 Fake News Detection using NLP & Machine Learning")
-
-st.write(f"Model Accuracy: {accuracy:.2f}")
-
-
-# -------------------------------
-# Confusion Matrix
-# -------------------------------
-st.subheader("Confusion Matrix")
+# -----------------------------
+# Graph: Data Distribution
+# -----------------------------
+st.subheader("📊 Data Distribution")
 
 fig, ax = plt.subplots()
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+sns.countplot(x="label", data=data, ax=ax)
+ax.set_title("Label (0 = Fake, 1 = Real)")
 st.pyplot(fig)
 
+# -----------------------------
+# Word Cloud
+# -----------------------------
+st.subheader("☁ Word Cloud (Fake News)")
 
-# -------------------------------
-# Bar Graph
-# -------------------------------
-st.subheader("Fake vs Real News Distribution")
+fake_text = " ".join(data[data["label"] == 0]["text"].values)
 
-fig2, ax2 = plt.subplots()
-data['label'].value_counts().plot(kind='bar', ax=ax2)
-ax2.set_xlabel("Label (0 = Fake, 1 = Real)")
-ax2.set_ylabel("Count")
-st.pyplot(fig2)
+wordcloud = WordCloud(width=800, height=400, background_color="black").generate(fake_text)
 
+fig_wc, ax_wc = plt.subplots()
+ax_wc.imshow(wordcloud, interpolation="bilinear")
+ax_wc.axis("off")
+st.pyplot(fig_wc)
 
-# -------------------------------
-# WordCloud
-# -------------------------------
-st.subheader("Word Cloud (Fake News)")
+# -----------------------------
+# User Input
+# -----------------------------
+st.subheader("📝 Enter News Text:")
 
-fake_text = " ".join(data[data['label'] == 0]['text'])
-
-wc = WordCloud(width=800, height=400, background_color='black').generate(fake_text)
-
-fig3, ax3 = plt.subplots()
-ax3.imshow(wc)
-ax3.axis("off")
-
-st.pyplot(fig3)
-
-
-# -------------------------------
-# Prediction
-# -------------------------------
-def clean_text_input(text):
-    text = text.lower()
-    text = text.translate(str.maketrans("", "", string.punctuation))
-    return text
-
-
-user_input = st.text_area("Enter News Text:")
+user_input = st.text_area("")
 
 if st.button("Predict"):
-    cleaned = clean_text_input(user_input)
-    vectorized = vectorizer.transform([cleaned])
-    result = model.predict(vectorized)
-
-    if result[0] == 0:
-        st.error("❌ Fake News")
+    if user_input.strip() == "":
+        st.warning("Please enter some text")
     else:
-        st.success("✅ Real News")
+        input_vector = vectorizer.transform([user_input])
+
+        prediction = model.predict(input_vector)[0]
+        probability = model.predict_proba(input_vector)[0]
+
+        if prediction == 1:
+            st.success(f"✅ Real News (Confidence: {round(probability[1]*100, 2)}%)")
+        else:
+            st.error(f"❌ Fake News (Confidence: {round(probability[0]*100, 2)}%)")
+
+# -----------------------------
+# Confusion Matrix
+# -----------------------------
+st.subheader("📉 Confusion Matrix")
+
+fig_cm, ax_cm = plt.subplots()
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax_cm)
+ax_cm.set_xlabel("Predicted")
+ax_cm.set_ylabel("Actual")
+st.pyplot(fig_cm)
