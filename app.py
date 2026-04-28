@@ -73,7 +73,16 @@ model, vectorizer, accuracy, cm, data = train_model()
 # Show Accuracy
 # -----------------------------
 st.write(f"### Model Accuracy: {round(accuracy, 2)}")
+# -----------------------------
+# Confusion Matrix
+# -----------------------------
+st.subheader("📉 Confusion Matrix")
 
+fig_cm, ax_cm = plt.subplots()
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax_cm)
+ax_cm.set_xlabel("Predicted")
+ax_cm.set_ylabel("Actual")
+st.pyplot(fig_cm)
 # -----------------------------
 # Graph: Data Distribution
 # -----------------------------
@@ -119,13 +128,3 @@ if st.button("Predict"):
         else:
             st.error(f"❌ Fake News (Confidence: {round(probability[0]*100, 2)}%)")
 
-# -----------------------------
-# Confusion Matrix
-# -----------------------------
-st.subheader("📉 Confusion Matrix")
-
-fig_cm, ax_cm = plt.subplots()
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax_cm)
-ax_cm.set_xlabel("Predicted")
-ax_cm.set_ylabel("Actual")
-st.pyplot(fig_cm)
