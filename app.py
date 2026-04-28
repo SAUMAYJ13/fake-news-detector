@@ -24,8 +24,8 @@ st.title("📰 Fake News Detection App")
 @st.cache_resource
 def train_model():
     # Load LOCAL dataset (important for deployment)
-    fake = pd.read_csv("Fake.csv")
-    real = pd.read_csv("True.csv")
+    fake = pd.read_csv("Fake_small.csv")
+    real = pd.read_csv("True_small.csv")
 
     fake["label"] = 0
     real["label"] = 1
